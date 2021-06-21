@@ -2,6 +2,8 @@
 
 DesmosText serves as a near one-to-one mapping between Desmos graphs in JSON and human-readable text files. DesmosText uses the `.dest` file extension.
 
+WARNING: DesmosText is not yet stable. Do not use it with the expectation that `.dest` files will continue to work in the future.
+
 Some goals for DesmosText:
 
 - Provide a simple human-readable format for Desmos graphs, allowing:
@@ -9,7 +11,8 @@ Some goals for DesmosText:
   - Provide canonical file sizes for code golfing purposes
   - Easy, human-readable sharing independent of Desmos' graph links
 - Transform smoothly (via compilers) to and from Desmos State JSON
-  - (nice-to-have) can transform back and forth without losing information
+  - more precisely, any graph that doesn't display any errors and is created purely within the Desmos UI should have equal function when transformed through DesmosText
+  - (nice-to-have) can transform back and forth without losing any information
 - Everything possible in Desmos should be possible in DesmosText as well
 - Use sane defaults (the same defaults as Desmos) when possible, for example `-10 ≤ x ≤ 10` for viewport bounds
 - (long-term) Can be included in DesModder as a button to switch between DesmosText mode and MathQuill mode
