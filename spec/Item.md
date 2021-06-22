@@ -121,13 +121,19 @@ type LabelOrientation =
 
 ## Grammar
 
-An expression consists of one or more option groups, separated by semicolons (`;`). An option group can be:
+An item consists of one or more option groups, separated by semicolons (`;`). An option group can be:
 
-- the math expression itself, e.g. `y=2x`. If present, this must come first.
+- The type-specific object. If present, this must come first, and this is necessary to specify that an item is a non-expression, such as an image or folder
+  - For expressions, this is a math expression, e.g. `y=2x`.
+  - For images, this is the `image_url` data URL, e.g. `image "data:image/png,..."`
+  - For tables, this is the table columns (rest of syntax TODO) - ???
+  - For folders, this is the folder title, e.g. `folder` (no title) or `folder "My awesome folder"`
+  - For notes, this is the note content, e.g. `note` (empty note) or `note "Do some math"`
+  - For simulations, this is empty (rest of syntax TODO) - ???
 - a small flag
 
-  - `secret`
-  - `hidden`
+  - for all: `secret`
+  - for expressions, images, folders: `hidden`
 
 - a namespace, followed by a colon (`:`), followed by one or more options separated by commas (`,`). An option can be:
 
@@ -156,6 +162,10 @@ An expression consists of one or more option groups, separated by semicolons (`;
     - `boxplot: include outliers`; `boxplot: exclude outliers` is default, omitted
     - `dotplot: binned x`; `dotplot: exact x` is default, omitted
     - `cdf: show`; `cdf: hide`
+    - `image: foreground` (`background` is default, omitted)
+    - `image: draggable` (`not draggable` is default, omitted)
+    - `simulation: playing` (`not playing` is default, omitted)
+    - `simulation: enabled` (`disabled` is default, omitted)
 
   - An object of a broad type. If present, this must be immediately after the namespace name
 
@@ -181,11 +191,31 @@ An expression consists of one or more option groups, separated by semicolons (`;
     - `boxplot: breadth = 5`
     - `boxplot: offset = 3`
     - `dotplot: size = 5` (dotplotSize appears deprecated, but including anyways)
+    - `image: width = 10`
+    - `image: height = 7`
+    - `image: center = (3,3)`
+    - `image: angle = 4*pi`
+    - `image: opacity = 0.8`
+    - `simulation: fps = 59`
 
 ```
-expression_line → (option_group | math_expr) (";" option_group)*
+; nested folders are a compile-time error, but the parser will accept it
+item_line →
+  | initial_group | initial_group ";" SEP<option_group, ";">
+  | ("hidden" | "collapsed" | "secret")* folder string? "{" item_line* "}"
+initial_group →
+  | math_expr
+  | "image" string
+  | "table" <??? TODO>
+  | "folder" string?
+  | "note" string?
+  | "simulation" <??? TODO>
 option_group →
+  | small_flag
   | "id" ":" string
+  | expression_option
+  | key ":" option_or_flag trailing_opts
+expression_option →
   | "polar" "domain" ":" interval
   | "domain" ":" interval
   | "color" ":" hex_code trailing_opts
@@ -193,8 +223,10 @@ option_group →
   | "slider" ":" interval trailing_opts
   | "cdf" ":" interval trailing_opts
   | "regression" ":" regression_parameters trailing_opts
-  | key ":" option_or_flag trailing_opts
-small_flag → "secret" | "hidden"
+image_option →
+  | "name" ":" string
+  |
+small_flag → "secret" | "hidden" | "foreground" | "background"
 trailing_opts → ("," option_or_flag)*
 option_or_flag → key "=" math_expr | flag
 key → words
@@ -208,6 +240,8 @@ interval → "[" math_expr ":" math_expr (":" math_expr)? "]"
 Mismatching options (such as `loop backward` not inside the `slider` namespace), are treated as compile-time errors.
 
 Desmos automatically prunes keys (using `delete obj[key]`) that are the same as the default (presumably to save server space/bandwidth). Hence default options such as `label: outline` are omitted from processing because they carry no information.
+
+If an item line specifies something twice, the former gets overriden and a compile-time warning is emitted.
 
 ### Colors
 
