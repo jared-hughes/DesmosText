@@ -11,3 +11,5 @@ See [State.md](State.md) for the root-level definitions from which everything el
 Any questions or areas of significant doubt are marked with a `???`.
 
 ??? We need some way to handle unparseable math. For example if some latex is `x+\cdot 5`, we'd still want to encode it in DesmosText to not use information or account for the case where the parser is broken. Maybe use backticks like `` `x+\cdot 5` `` or just quotes like we're using for strings, such as `"x+\cdot 5"`.
+
+??? Should there be some hidden marker that a graph is produced from DesmosText?

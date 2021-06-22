@@ -106,8 +106,7 @@ SEP<T, S> → <T> | SEP<T, S> <S> <T>
 ; the second ID (as part of `in ID`) is a parent folder's ID, if any
 ; a folder within a folder will cause a compile error
 ; put secret in with the rest of the options???
-item_line_full → (ID ";")? "secret"? item_line
-ID → number | string
+item_line_full → item_line
 ; in the folder branch, the string is the folder title
 ; the grammar allows for folders in folders; these are compile-time errors
 item_line →

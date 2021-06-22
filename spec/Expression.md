@@ -121,111 +121,97 @@ type LabelOrientation =
 
 ## Grammar
 
-Unlike the other item types which have a prefix (`note`, `table`, etc.), expressions have no prefix, so at their minimum they could be just a single string like `y=1`.
+An expression consists of one or more option groups, separated by semicolons (`;`). An option group can be:
 
-Besides the expression content itself (which gets compiled to latex), further options can be specified in the following format:
+- the math expression itself, e.g. `y=2x`. If present, this must come first.
+- a small flag
 
-- Each option is grouped to a namespace, e.g. `lines` or `slider`
-- The options for each namespace must be separated from each other by semicolons (`;`)
-- Some namespaces are really just a single flag or enum, so it's easiest to implement them as such:
-  - `display fraction`: expression value display mode (`float` is default, omitted)
-  - `bins aligned left`: for histograms & dotplots (`center` is default, omitted)
-  - `histogram mode relative` and `histogram mode density` (`count` is default, omitted)
-  - `drag x`, `drag y`, `drag xy`: drag mode (`none` is default, omitted)
-- The rest of the options can be written by starting with the namespace name then:
+  - `secret`
+  - `hidden`
 
-  - (optionally) add an "obvious" argument
-    - Argument list by namespace:
-      - `color`: color (usually hex code)
-      - `label`: label string
-      - `slider`: slider bounds
-      - `polar domain`: domain
-      - `domain`: domain (assumes `domain` and `parametricDomain` are the same always; from testing, `domain` has no effect)
-      - `cdf`: interval
-    - e.g. `color #000`
-    - e.g. `drag x`
-    - e.g. `domain [0:1]`
-  - (optionally) add options by adding a comma (`,`) followed by a flag or an option name followed by value
+- a namespace, followed by a colon (`:`), followed by one or more options separated by commas (`,`). An option can be:
 
-    - Flag list by namespace:
+  - A flag:
 
-      - `label, show`, `label, hide`
-      - `label, placement below left`
+    - `display: fraction`: expression value display mode (`float` is default, omitted)
+    - `bins aligned: left`: for histograms & dotplots (`center` is default, omitted)
+    - `histogram mode: relative` and `histogram mode density` (`count` is default, omitted)
+    - `drag: x`, `drag: y`, `drag: xy`: drag mode (`none` is default, omitted)
+    - `label: show`, `label: hide`
+    - `label: placement below left`, `label: placement right`, ...
+      - `labelOrientation` is different from `extendedLabelOrientation`. I don't understand either well enough, so I'm not going to implement/list all of the possible orientations yet. (???)
+    - `label: editable math`, `label: editable text`; no default
+    - `label: show on hover` (doesn't show if `show label` is disabled); `label: show always` is default, omitted
+    - `label: no outline`; `label: outline` is default, omitted
+    - `points: show`, `points: hide`
+    - `points: open`, `points: cross`; `points: dot` is default, omitted
+    - `lines: show`, `lines: hide`
+    - `lines: dashed`, `lines: dotted`; `lines: solid` is default, omitted
+    - `fill: show`, `fill: hide`
+    - `regression: log mode`; `regression: no log mode` is default, omitted
+    - `slider: hard min`; `slider: soft min` is default, omitted
+    - `slider: hard max`; `slider: soft max` is default, omitted
+    - `slider: loop backward`, `slider: once forward`, `slider: forever forward`; `slider: loop forward` is default
+    - `boxplot: aligned to y`; `boxplot: aligned to x` is default, omitted
+    - `boxplot: include outliers`; `boxplot: exclude outliers` is default, omitted
+    - `dotplot: binned x`; `dotplot: exact x` is default, omitted
+    - `cdf: show`; `cdf: hide`
 
-        - `labelOrientation` is different from `extendedLabelOrientation`. I don't understand either well enough, so I'm not going to implement/list all of the possible orientations yet. (???)
+  - An object of a broad type. If present, this must be immediately after the namespace name
 
-      - `label, editable math`, `label, editable text`; no default
-      - `label, show on hover` (doesn't show if `show label` is disabled); `label, show always` is default, omitted
-      - `label, no outline`; `label, outline` is default, omitted
-      - `points, show`, `points, hide`
-      - `points, open`, `points, cross`; `points, dot` is default, omitted
-      - `lines, show`, `lines, hide`
-      - `lines, dashed`, `lines, dotted`; `lines, solid` is default, omitted
-      - `fill, show`, `fill, hide`
-      - `regression, log mode`; `regression, no log mode` is default, omitted
-      - `slider, hard min`; `slider, soft min` is default, omitted
-      - `slider, hard max`; `slider, soft max` is default, omitted
-      - `slider, loop backward`, `slider, once forward`, `slider, forever forward`; `slider, loop forward` is default
-      - `boxplot, aligned to y`; `boxplot, aligned to x` is default, omitted
-      - `boxplot, include outliers`; `boxplot, exclude outliers` is default, omitted
-      - `dotplot, binned x`; `dotplot, exact x` is default, omitted
-      - `cdf, show`; `cdf, hide`
+    - `id:` ID as a string, such as `id: "7"`
+    - `polar domain`: polar domain as an interval, such as `polar domain: [0:2*pi]`
+    - `domain`: parametric domain as an interval, such as `domain: [0:1]` (assumes `domain` and `parametricDomain` are the same always; from testing, `domain` has no effect)
+    - `color`: color, such as `color: #000000`
+    - `label`: label string, such as `label: "Origin"`
+    - `slider`: slider bounds as an interval, such as `slider: [0:5:1]`
+    - `cdf`: integration bounds as an interval, such as `cdf: [1:8]`
+    - `regression: {a: 0.01, b: 47}` How to handle regressionParameters ???
 
-    - Option list by namespace (with example value):
+  - A key, followed by an equals sign (`=`), followed by a math expression value
 
-      - `label, size 5+u` (besides math expressions, `small`, `medium` and `large` are accepted)
-      - `color, var c_x`
-      - `points, opacity v_{a}`
-      - `lines, opacity 0.5k`
-      - `lines, width 5+c`
-      - `fill, opacity 0.5k`
-      - `regression, residuals e_{1}`
-      - `regression, parameters {}` How to handle regressionParameters ???
-      - `slider, period 8000` (4000 is 1x, 8000 is 0.5x, etc. Support `4x` notation???)
-      - `boxplot, breadth 5`
-      - `boxplot, offset 3`
-      - `dotplot, size 5` (dotplotSize appears deprecated, but including anyways)
-
-    - e.g. `slider [0:1], loop forward`
-    - e.g. `show lines, opacity 0.5`
-
-Desmos automatically prunes keys (using `delete obj[key]`) that are the same as the default (presumably to save server space/bandwidth). Hence default options such as `label, outline` are omitted because they carry no information.
-
-### BNF-like
-
-(Partial description)
+    - `label: size = 5+u` (besides math expressions, `small`, `medium` and `large` are accepted)
+    - `color: var = c_x`
+    - `points: opacity = v_{a}`
+    - `lines: opacity = 0.5k`
+    - `lines: width = 5+c`
+    - `fill: opacity = 0.5k`
+    - `regression: residuals = e_{1}`
+    - `slider: period = 8000` (4000 is 1x, 8000 is 0.5x, etc. Support `4x` notation???)
+    - `boxplot: breadth = 5`
+    - `boxplot: offset = 3`
+    - `dotplot: size = 5` (dotplotSize appears deprecated, but including anyways)
 
 ```
-; invalid options will be compile-time errors
-namespace → namespace_maybe_arg options_list? ("," option)*
-option → flag | key ":" value
-namespace_maybe_arg → namespace_flag_only | namespace_with_arg
-namespace_flag_only →
-    | "display" "fraction"
-    | "bins" "aligned" "left"
-    | "histogram" "mode" "relative"
-    | "histogram" "mode" "density"
-    | "drag" "x"
-    | "drag" "y"
-    | "drag" "xy"
-namespace_with_arg →
-    | "color" color?
-    | "slider" interval?
-    | "polar domain" interval?
-    | "domain" interval?
-    | "cdf" interval?
-    | maybe_show "label" string?
-    | maybe_show "point"
-    | maybe_show "lines"
-    | maybe_show "fill"
-    | maybe_show "cdf"
-maybe_show = ("show" | "hide")?
+expression_line → (option_group | math_expr) (";" option_group)*
+option_group →
+  | "id" ":" string
+  | "polar" "domain" ":" interval
+  | "domain" ":" interval
+  | "color" ":" hex_code trailing_opts
+  | "label" ":" string trailing_opts
+  | "slider" ":" interval trailing_opts
+  | "cdf" ":" interval trailing_opts
+  | "regression" ":" regression_parameters trailing_opts
+  | key ":" option_or_flag trailing_opts
+small_flag → "secret" | "hidden"
+trailing_opts → ("," option_or_flag)*
+option_or_flag → key "=" math_expr | flag
+key → words
+flag → words
+words → (letter | non-newline whitespace)+
 interval → "[" math_expr ":" math_expr (":" math_expr)? "]"
 ```
 
 ## Behavior
 
-The predefined colors are
+Mismatching options (such as `loop backward` not inside the `slider` namespace), are treated as compile-time errors.
+
+Desmos automatically prunes keys (using `delete obj[key]`) that are the same as the default (presumably to save server space/bandwidth). Hence default options such as `label: outline` are omitted from processing because they carry no information.
+
+### Colors
+
+The predefined colors in Desmos are
 
 ```
 black: "#000000"
@@ -246,9 +232,10 @@ See also
 
 ```
 y=x^2
-y=x; blue
-(0,0); show label "Origin"
+y=x; color: #000
+(0,0); label "Origin", show
 y=sin(x); hidden
-x=2; solid
-(0,[1...5]); show points; hide lines
+x=2; lines: dotted, width=5, opacity=0.8
+(0,[1...5]); points: show, cross; lines: hide
+a=0; slider: [0:1], loop forward
 ```
