@@ -1,6 +1,6 @@
 # DesmosText
 
-DesmosText serves as a near one-to-one mapping between Desmos graphs in JSON and human-readable text files. DesmosText uses the `.dest` file extension.
+DesmosText serves as a Domain-Specific Language (DSL) with a nearly one-to-one mapping between Desmos graphs in JSON and human-readable text files. DesmosText uses the `.dest` file extension.
 
 WARNING: DesmosText is not yet stable. Do not use it with the expectation that `.dest` files will continue to work in the future.
 
@@ -25,7 +25,7 @@ Some non-goals for DesmosText:
 
 ## Progress Timeline to 0.1 release (near feature parity with Desmos):
 
-- Language design: 0% (100% = includes all features of desktop Desmos)
+- Language design: 25% (100% = includes all features of desktop Desmos)
 - Testing: 0% (not sure how to get to 100%)
 
 Forward
