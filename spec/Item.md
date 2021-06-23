@@ -179,7 +179,7 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
     - `label`: label string, such as `label: "Origin"`
     - `slider`: slider bounds as an interval, such as `slider: [0:5:1]`
     - `cdf`: integration bounds as an interval, such as `cdf: [1:8]`
-    - `regression: {a: 0.01, b: 47}` How to handle regressionParameters ???
+    - `regression: {a=0.01, b=47}` regression parameters as key-value pairs.
     - `screen reader label:` description of clickable object, as a string
     - `clickable rules:` list of enabled clickable object rules (requires clickable rules enabled)
     - `disabled clickable rules:` list of clickable object rules (note `disabled` is default, so no mention in the graph state)
@@ -228,13 +228,13 @@ id_option → "id" ":" string
 expression_option →
   | "polar" "domain" ":" interval
   | "domain" ":" interval
-  | "color" ":" hex_code trailing_opts
-  | "label" ":" string trailing_opts
-  | "slider" ":" interval trailing_opts
-  | "cdf" ":" interval trailing_opts
-  | "regression" ":" regression_parameters trailing_opts
+  | "color" ":" hex_code? trailing_opts
+  | "label" ":" string? trailing_opts
+  | "slider" ":" interval? trailing_opts
+  | "cdf" ":" interval? trailing_opts
+  | "regression" ":" regression_parameters? trailing_opts
   | "fps" ":" math_expr
-  | "disabled"? "clickable rules" clickable_rules
+  | "disabled"? "clickable rules" ":" clickable_rules
 small_flag →
   | "secret"
   | "hidden"
@@ -245,6 +245,7 @@ small_flag →
 column_values → (math_expr ":")? "[" SEP(math_expr, ",")? "]"
 clickable_rules → "[" SEP(clickable_rule*, ",")? "]"
 clickable_rule → math_expr "<-" math_expr (";" id_option)?
+regression_parameters → "{" SEP(math_expr "=" number, ",") "}"
 trailing_opts → ("," option_or_flag)*
 option_or_flag → key "=" math_expr | flag
 key → words
