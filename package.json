@@ -1,0 +1,24 @@
+{
+  "name": "desmos-text",
+  "version": "0.1.0",
+  "description": "Human-readable text format for Desmos graphs",
+  "main": "index.js",
+  "scripts": {
+    "translate": "ts-node src/desmos-text"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jared-hughes/DesmosText.git"
+  },
+  "author": "fireflame241",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jared-hughes/DesmosText/issues"
+  },
+  "homepage": "https://github.com/jared-hughes/DesmosText#readme",
+  "dependencies": {
+    "@types/node": "^15.12.4",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.4"
+  }
+}

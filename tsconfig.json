@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist/",
+        "sourceMap": true,
+        "strictNullChecks": true,
+        "module": "es6",
+        "target": "es2020",
+        "strict": true
+    },
+    "include": [
+        "./src/"
+    ]
+}
