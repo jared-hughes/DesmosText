@@ -123,17 +123,24 @@ type LabelOrientation =
 
 An item consists of one or more option groups, separated by semicolons (`;`). An option group can be:
 
-- The type-specific object. If present, this must come first, and this is necessary to specify that an item is a non-expression, such as an image or folder
+- The type-specific object. If present, this must come first (for expressions, images, and notes) or last (for folders, tables, and simulations)
   - For expressions, this is a math expression, e.g. `y=2x`.
   - For images, this is the `image_url` data URL, e.g. `image "data:image/png,..."`
-  - For tables, this is the table columns (rest of syntax TODO) - ???
-  - For folders, this is the folder title, e.g. `folder` (no title) or `folder "My awesome folder"`
+  - For tables, this is the table columns as a list wrapped in braces
+    - each column looks like a math expression, except it takes `column_latex: [math_expr, math_expr, ...]` instead of `math_expr`
+    - e.g. `table { x_1: [1, 2, 3]; id: "3" }` or just `table { [4,5,6] }`
+  - For folders, this is the folder title then the contents of the folder in braces, e.g. `folder {}` (no title, no contents) or `folder "My awesome folder" { y=x }`
+    - each line inside can be any item, including folders. Nested folders would be a compile-time error though, but the parser will accept it
   - For notes, this is the note content, e.g. `note` (empty note) or `note "Do some math"`
-  - For simulations, this is empty (rest of syntax TODO) - ???
-- a small flag
+  - For simulations, this is a list of clickable object rules, e.g. `simulation { a <- a+1, b <- a+b }`
+- Immediately before the type-specific object may be one or more space-separated small flags. Valid options:
 
   - for all: `secret`
   - for expressions, images, folders: `hidden`
+  - for images: `foreground` (`background` is default, omitted)
+  - for images: `draggable` (`not draggable` is default, omitted)
+  - for simulations: `playing` (`not playing` is default, omitted)
+  - for folders: `collapsed` (`not collapsed` is default, omitted)
 
 - a namespace, followed by a colon (`:`), followed by one or more options separated by commas (`,`). An option can be:
 
@@ -162,10 +169,6 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
     - `boxplot: include outliers`; `boxplot: exclude outliers` is default, omitted
     - `dotplot: binned x`; `dotplot: exact x` is default, omitted
     - `cdf: show`; `cdf: hide`
-    - `image: foreground` (`background` is default, omitted)
-    - `image: draggable` (`not draggable` is default, omitted)
-    - `simulation: playing` (`not playing` is default, omitted)
-    - `simulation: enabled` (`disabled` is default, omitted)
 
   - An object of a broad type. If present, this must be immediately after the namespace name
 
@@ -177,6 +180,11 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
     - `slider`: slider bounds as an interval, such as `slider: [0:5:1]`
     - `cdf`: integration bounds as an interval, such as `cdf: [1:8]`
     - `regression: {a: 0.01, b: 47}` How to handle regressionParameters ???
+    - `screen reader label:` description of clickable object, as a string
+    - `clickable rules:` list of enabled clickable object rules (requires clickable rules enabled)
+    - `disabled clickable rules:` list of clickable object rules (note `disabled` is default, so no mention in the graph state)
+    - (for images) `name:` string
+    - (for simulations) `fps:` fps as a math_expr
 
   - A key, followed by an equals sign (`=`), followed by a math expression value
 
@@ -196,25 +204,27 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
     - `image: center = (3,3)`
     - `image: angle = 4*pi`
     - `image: opacity = 0.8`
-    - `simulation: fps = 59`
 
 ```
-; nested folders are a compile-time error, but the parser will accept it
 item_line →
-  | initial_group | initial_group ";" SEP<option_group, ";">
-  | ("hidden" | "collapsed" | "secret")* folder string? "{" item_line* "}"
+  | small_flag* initial_group (";" option_group)*
+  | (option_group ";")* small_flag* final_group
+column_line → small_flag* column_values (";" option_group)*
+final_group →
+  | "folder" string? "{" item_line* "}"
+  | "table" "{" column_line* "}"
+  | "simulation" clickable_rules?
 initial_group →
   | math_expr
   | "image" string
-  | "table" <??? TODO>
-  | "folder" string?
   | "note" string?
-  | "simulation" <??? TODO>
 option_group →
+  | id_option
   | small_flag
-  | "id" ":" string
   | expression_option
+  | "name" ":" string
   | key ":" option_or_flag trailing_opts
+id_option → "id" ":" string
 expression_option →
   | "polar" "domain" ":" interval
   | "domain" ":" interval
@@ -223,10 +233,18 @@ expression_option →
   | "slider" ":" interval trailing_opts
   | "cdf" ":" interval trailing_opts
   | "regression" ":" regression_parameters trailing_opts
-image_option →
-  | "name" ":" string
-  |
-small_flag → "secret" | "hidden" | "foreground" | "background"
+  | "fps" ":" math_expr
+  | "disabled"? "clickable rules" clickable_rules
+small_flag →
+  | "secret"
+  | "hidden"
+  | "foreground"
+  | "draggable"
+  | "playing"
+  | "collapsed"
+column_values → (math_expr ":")? "[" SEP(math_expr, ",")? "]"
+clickable_rules → "[" SEP(clickable_rule*, ",")? "]"
+clickable_rule → math_expr "<-" math_expr (";" id_option)?
 trailing_opts → ("," option_or_flag)*
 option_or_flag → key "=" math_expr | flag
 key → words
