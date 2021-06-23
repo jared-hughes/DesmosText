@@ -69,7 +69,7 @@ interface FolderState extends BaseItemModel {
 
 ## Grammar
 
-We are safe to use colons `:` unambiguously to define options because colons are invalid in all Desmos expressions (besides images and notes maybe???)
+We are safe to use colons `:` unambiguously to define options because colons are invalid in all Desmos expressions (except in notes and image URLs, but those are wrapped in quotes to form strings).
 
 The target Desmos version is always 8 for now. It may be a compiler option later.
 
