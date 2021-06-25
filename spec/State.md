@@ -32,7 +32,6 @@ interface GrapherState {
   xAxisNumbers?: boolean;
   yAxisNumbers?: boolean;
   polarNumbers?: boolean;
-  enableTabindex?: boolean;
   xAxisStep?: number;
   yAxisStep?: number;
   xAxisArrowMode?: ArrowMode;
@@ -91,7 +90,7 @@ setting_line →
   | "axes" ":" XY<show_or_hide>
   | "axis" "numbers" ":" XYP<show_or_hide>
 ; used for intervals between two numbers
-number_interval → "[" number "," number "]"
+number_interval → "[" number ":" number "]"
 ; used for a pair of numbers
 number_pair → "<" ">
 arrow_mode → "<->" | "->" | "-"
@@ -115,7 +114,6 @@ Later-specified flags take precedence. The second flag of each pair has no effec
 - `degrees`, `radians`
 - `hide grid`, `show grid`
 - `polar grid`, `cartesian grid`
-- `tab index`, `no tab index`
 - `square axes`, `no square axes`
 - `first quadrant`, `all quadrants`
 
@@ -123,14 +121,14 @@ Later-specified flags take precedence. The second flag of each pair has no effec
 
 ```
 seed: "abc"
-viewport: x [-10, 10], y [-6, 6]
+viewport: x [-10:10], y [-6:6]
 minor subdivisions: x 5, y 5
 axis steps: x 2, y 1.2
 axis arrows: x ->, y <->
 axis labels: x "time", y "temperature"
 axes: x show, y hide
 axis numbers: x hide, polar show
-flags: degrees, hide grid, no tab index, square axes, first quadrant
+flags: degrees, hide grid, square axes, first quadrant
 
 note "The following folder is secret, so students cannot see it"
 secret collapsed folder "Folder title" {

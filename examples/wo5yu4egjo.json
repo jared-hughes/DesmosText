@@ -1,0 +1,36 @@
+{
+  "version": 8,
+  "graph": {
+    "viewport": {
+      "xmin": -3,
+      "ymin": -7.2,
+      "xmax": 5,
+      "ymax": 7.397
+    },
+    "showGrid": false,
+    "showXAxis": false,
+    "xAxisStep": 2,
+    "xAxisMinorSubdivisions": 1,
+    "yAxisMinorSubdivisions": 1,
+    "xAxisNumbers": false,
+    "yAxisNumbers": false,
+    "polarNumbers": false,
+    "restrictGridToFirstQuadrant": true,
+    "squareAxes": false
+  },
+  "randomSeed": "82088ea8b01b67575e669ed442e21fef",
+  "expressions": {
+    "list": [
+      {
+        "type": "expression",
+        "id": "1",
+        "color": "#c74440"
+      },
+      {
+        "type": "expression",
+        "id": "2",
+        "color": "#2d70b3"
+      }
+    ]
+  }
+}

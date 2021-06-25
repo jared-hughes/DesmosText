@@ -123,7 +123,7 @@ type LabelOrientation =
 
 An item consists of one or more option groups, separated by semicolons (`;`). An option group can be:
 
-- The type-specific object. If present, this must come first (for expressions, images, and notes) or last (for folders, tables, and simulations)
+- The affix group (specific to the type of item). If present, this must come first (for expressions, images, and notes) or last (for folders, tables, and simulations)
   - For expressions, this is a math expression, e.g. `y=2x`.
   - For images, this is the `image_url` data URL, e.g. `image "data:image/png,..."`
   - For tables, this is the table columns as a list wrapped in braces
@@ -148,9 +148,9 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
 
     - `display: fraction`: expression value display mode (`float` is default, omitted)
     - `bins aligned: left`: for histograms & dotplots (`center` is default, omitted)
-    - `histogram mode: relative` and `histogram mode density` (`count` is default, omitted)
+    - `histogram mode: relative` and `histogram mode: density` (`count` is default, omitted)
     - `drag: x`, `drag: y`, `drag: xy`: drag mode (`none` is default, omitted)
-    - `label: show`, `label: hide`
+    - `label: show`; `label: hide` is default, omitted
     - `label: placement below left`, `label: placement right`, ...
       - `labelOrientation` is different from `extendedLabelOrientation`. I don't understand either well enough, so I'm not going to implement/list all of the possible orientations yet. (???)
     - `label: editable math`, `label: editable text`; no default
@@ -168,7 +168,7 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
     - `boxplot: aligned to y`; `boxplot: aligned to x` is default, omitted
     - `boxplot: include outliers`; `boxplot: exclude outliers` is default, omitted
     - `dotplot: binned x`; `dotplot: exact x` is default, omitted
-    - `cdf: show`; `cdf: hide`
+    - `cdf: show`; `cdf: hide` is default, omitted
 
   - An object of a broad type. If present, this must be immediately after the namespace name
 
@@ -219,13 +219,7 @@ initial_group →
   | "image" string
   | "note" string?
 option_group →
-  | id_option
-  | small_flag
-  | expression_option
-  | "name" ":" string
-  | key ":" option_or_flag trailing_opts
-id_option → "id" ":" string
-expression_option →
+  | "id" ":" string
   | "polar" "domain" ":" interval
   | "domain" ":" interval
   | "color" ":" hex_code? trailing_opts
@@ -235,6 +229,9 @@ expression_option →
   | "regression" ":" regression_parameters? trailing_opts
   | "fps" ":" math_expr
   | "disabled"? "clickable rules" ":" clickable_rules
+  | "screen" "reader" "label" ":" string
+  | "name" ":" string
+  | key ":" option_or_flag trailing_opts
 small_flag →
   | "secret"
   | "hidden"

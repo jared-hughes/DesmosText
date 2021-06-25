@@ -1,0 +1,3 @@
+[submodule "src/calc-state-ts"]
+	path = src/calc-state-ts
+	url = https://github.com/jared-hughes/calc-state-ts

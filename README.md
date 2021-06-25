@@ -25,7 +25,7 @@ Some non-goals for DesmosText:
 
 ## Progress Timeline to 0.1 release (near feature parity with Desmos):
 
-- Language design: 45% (100% = includes all features of desktop Desmos)
+- Language design: 65% (100% = includes all features of desktop Desmos)
 - Testing: 0% (not sure how to get to 100%)
 
 Forward
