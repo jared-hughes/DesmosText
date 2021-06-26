@@ -3,7 +3,10 @@ export interface Program {
 }
 
 // TODO: handle full math AST
-type Latex = string;
+export type Latex = {
+  type: "raw-latex";
+  value: string;
+};
 
 export type Line = SettingLine | ItemLine;
 
@@ -55,25 +58,25 @@ export type SettingLine =
       polar?: ShowOrHide;
     };
 
-interface NumberInterval {
+export interface NumberInterval {
   start: number;
   end: number;
 }
 
-type ArrowMode = "none" | "positive" | "both";
+export type ArrowMode = "none" | "positive" | "both";
 
-type ShowOrHide = "show" | "hide";
+export type ShowOrHide = "show" | "hide";
 
 /*** ITEM LINE ***/
 
-interface ItemLine {
+export interface ItemLine {
   type: "item-line";
   smallFlags: SmallFlag[];
   affixGroup: AffixGroup;
   optionGroups: OptionGroup[];
 }
 
-type SmallFlag =
+export type SmallFlag =
   | "secret"
   | "hidden"
   | "foreground"
@@ -81,7 +84,7 @@ type SmallFlag =
   | "playing"
   | "collapsed";
 
-type AffixGroup =
+export type AffixGroup =
   | {
       key: "folder";
       title?: string;
@@ -97,7 +100,7 @@ type AffixGroup =
     }
   | {
       key: "expr";
-      expr: Latex;
+      expr?: Latex;
     }
   | {
       key: "image";
@@ -108,21 +111,20 @@ type AffixGroup =
       text?: string;
     };
 
-interface ColumnLine {
-  key: "column";
+export interface ColumnLine {
   smallFlags: SmallFlag[];
   header?: Latex;
   values: Latex[];
   optionGroups: OptionGroup[];
 }
 
-interface ClickableRule {
+export interface ClickableRule {
   id: string;
   expression: Latex;
   assignment: Latex;
 }
 
-type OptionGroup =
+export type OptionGroup =
   | {
       key: "id";
       value: string;
@@ -144,9 +146,10 @@ type OptionGroup =
       value?: string;
       opts: {
         size?: Latex | "small" | "medium";
+        angle?: Latex;
         // TODO: labelOrientation flags
       };
-      flags?: Array<
+      flags: Array<
         | "show"
         | "editable math"
         | "editable text"
@@ -160,29 +163,28 @@ type OptionGroup =
       opts: {
         period?: number;
       };
-      flags?: Array<
+      flags: Array<
         | "hard min"
         | "hard max"
-        | "loop backward"
+        | "loop forward"
         | "once forward"
         | "forever forward"
+        | "playing"
+        | "left"
       >;
     }
   | {
       key: "cdf";
       value?: Interval;
-      flags?: Array<"show">;
+      flags: Array<"show">;
     }
   | {
       key: "regression";
-      parameters?: Array<{
-        parameter: Latex;
-        value: number;
-      }>;
+      parameters: RegressionParameter[];
       opts: {
-        residuals?: Latex;
+        residualVariable?: Latex;
       };
-      flags?: Array<"log mode">;
+      flags: Array<"log mode">;
     }
   | {
       key: "fps";
@@ -191,10 +193,10 @@ type OptionGroup =
   | {
       key: "clickable rules";
       value: ClickableRule[];
-      disabled: boolean;
+      flags: Array<"disabled">;
     }
   | {
-      key: "screen reader label";
+      key: "clickable label";
       value: string;
     }
   | {
@@ -220,26 +222,53 @@ type OptionGroup =
   | {
       key: "points";
       flags: Array<"show" | "hide" | "open" | "cross">;
+      opts: {
+        opacity?: Latex;
+        size?: Latex;
+      };
     }
   | {
       key: "lines";
       flags: Array<"show" | "hide" | "dashed" | "dotted">;
+      opts: {
+        opacity?: Latex;
+        width?: Latex;
+      };
     }
   | {
       key: "fill";
       flags: Array<"show" | "hide">;
+      opts: {
+        opacity?: Latex;
+      };
     }
   | {
       key: "boxplot";
+      breadth?: Latex;
+      offset?: Latex;
       flags: Array<"aligned to y" | "include outliers">;
     }
   | {
       key: "dotplot";
       flags: Array<"binned x">;
+    }
+  | {
+      key: "image";
+      opts: {
+        width?: Latex;
+        height?: Latex;
+        center?: Latex;
+        angle?: Latex;
+        opacity?: Latex;
+      };
     };
 
-interface Interval {
-  min: Latex;
-  max: Latex;
+export interface RegressionParameter {
+  parameter: Latex;
+  value: number;
+}
+export interface Interval {
+  min?: Latex;
+  max?: Latex;
   step?: Latex;
 }

@@ -136,7 +136,7 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
 - Immediately before the type-specific object may be one or more space-separated small flags. Valid options:
 
   - for all: `secret`
-  - for expressions, images, folders: `hidden`
+  - for expressions, images, folders, table columns: `hidden`
   - for images: `foreground` (`background` is default, omitted)
   - for images: `draggable` (`not draggable` is default, omitted)
   - for simulations: `playing` (`not playing` is default, omitted)
@@ -164,11 +164,14 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
     - `regression: log mode`; `regression: no log mode` is default, omitted
     - `slider: hard min`; `slider: soft min` is default, omitted
     - `slider: hard max`; `slider: soft max` is default, omitted
-    - `slider: loop backward`, `slider: once forward`, `slider: forever forward`; `slider: loop forward` is default
+    - `slider: loop forward`, `slider: once forward`, `slider: forever forward`; `slider: loop forward reverse` is default
+    - `slider: playing` (`slider: not playing` is default, omitted)
+    - `slider: left` for playDirection (`slider: right` is default, omitted)
     - `boxplot: aligned to y`; `boxplot: aligned to x` is default, omitted
     - `boxplot: include outliers`; `boxplot: exclude outliers` is default, omitted
     - `dotplot: binned x`; `dotplot: exact x` is default, omitted
     - `cdf: show`; `cdf: hide` is default, omitted
+    - `clickable rules: {}, disabled`; (note `disabled` is default, so opposite mention in the graph state)
 
   - An object of a broad type. If present, this must be immediately after the namespace name
 
@@ -180,17 +183,18 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
     - `slider`: slider bounds as an interval, such as `slider: [0:5:1]`
     - `cdf`: integration bounds as an interval, such as `cdf: [1:8]`
     - `regression: {a=0.01, b=47}` regression parameters as key-value pairs.
-    - `screen reader label:` description of clickable object, as a string
-    - `clickable rules:` list of enabled clickable object rules (requires clickable rules enabled)
-    - `disabled clickable rules:` list of clickable object rules (note `disabled` is default, so no mention in the graph state)
+    - `clickable label:` description of clickable object, as a string
+    - `clickable rules:` list of enabled clickable object rules (clickable rules enabled unless specified with disabled)
     - (for images) `name:` string
     - (for simulations) `fps:` fps as a math_expr
 
   - A key, followed by an equals sign (`=`), followed by a math expression value
 
     - `label: size = 5+u` (besides math expressions, `small`, `medium` and `large` are accepted)
+    - `label: angle = pi/2`
     - `color: var = c_x`
     - `points: opacity = v_{a}`
+    - `points: size = 2.5`
     - `lines: opacity = 0.5k`
     - `lines: width = 5+c`
     - `fill: opacity = 0.5k`
@@ -198,7 +202,7 @@ An item consists of one or more option groups, separated by semicolons (`;`). An
     - `slider: period = 8000` (4000 is 1x, 8000 is 0.5x, etc. Support `4x` notation???)
     - `boxplot: breadth = 5`
     - `boxplot: offset = 3`
-    - `dotplot: size = 5` (dotplotSize appears deprecated, but including anyways)
+    - <s>`dotplot: size = 5` (dotplotSize appears vestigial)</s>
     - `image: width = 10`
     - `image: height = 7`
     - `image: center = (3,3)`
@@ -228,7 +232,7 @@ option_group →
   | "cdf" ":" interval? trailing_opts
   | "regression" ":" regression_parameters? trailing_opts
   | "fps" ":" math_expr
-  | "disabled"? "clickable rules" ":" clickable_rules
+  | "clickable rules" ":" clickable_rules
   | "screen" "reader" "label" ":" string
   | "name" ":" string
   | key ":" option_or_flag trailing_opts
@@ -241,7 +245,7 @@ small_flag →
   | "collapsed"
 column_values → (math_expr ":")? "[" SEP(math_expr, ",")? "]"
 clickable_rules → "[" SEP(clickable_rule*, ",")? "]"
-clickable_rule → math_expr "<-" math_expr (";" id_option)?
+clickable_rule → math_expr "<-" math_expr (";" "id" : string)?
 regression_parameters → "{" SEP(math_expr "=" number, ",") "}"
 trailing_opts → ("," option_or_flag)*
 option_or_flag → key "=" math_expr | flag
@@ -257,7 +261,7 @@ Mismatching options (such as `loop backward` not inside the `slider` namespace),
 
 Desmos automatically prunes keys (using `delete obj[key]`) that are the same as the default (presumably to save server space/bandwidth). Hence default options such as `label: outline` are omitted from processing because they carry no information.
 
-If an item line specifies something twice, the former gets overriden and a compile-time warning is emitted.
+If an item line specifies something twice, that is a compile-time error.
 
 ### Colors
 
