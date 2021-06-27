@@ -1,5 +1,6 @@
 import { readFile } from "fs/promises";
-import jsonToDest from "./json-to-dest";
+import jsonToDestAST from "./json-to-dest-ast";
+import destASTToString from "./dest-ast-to-string";
 import * as path from "path";
 
 // note to self: use minimist library if you need more arg parsing
@@ -18,7 +19,8 @@ async function translate(filename: string) {
       throw "Compilation from .dest to Desmos JSON is not yet supported";
       break;
     case ".json":
-      console.log(jsonToDest(source));
+      const ast = jsonToDestAST(source);
+      console.log(destASTToString(ast));
       break;
     default:
       throw `Unhandled file type: ${extension}`;

@@ -1,20 +1,16 @@
-import { truncate } from "fs";
 import * as CalcState from "./calc-state-ts/state";
 import * as DestAST from "./dest-ast";
 
-const INDENT = "  ";
-
-export default function jsonToDest(stateString: string) {
+export default function jsonToDestAST(stateString: string) {
   const state = JSON.parse(stateString) as CalcState.State;
   // TODO: use AJV to perform a full check
   if (state.version !== 8) {
     throw "Desmos JSON versions other than 8 are not currently supported";
   }
-  const destAST = jsonToDestAST(state);
-  return destASTToDest(destAST);
+  return translateJSON(state);
 }
 
-function jsonToDestAST(state: CalcState.State) {
+function translateJSON(state: CalcState.State): DestAST.Program {
   const lines: DestAST.Line[] = [];
   const flags = [];
 
@@ -163,7 +159,7 @@ function jsonToDestAST(state: CalcState.State) {
       case "simulation":
         affixGroup = {
           key: "simulation",
-          rules: decodeClickableRules(item.clickableInfo?.rules ?? []),
+          rules: translateClickableRules(item.clickableInfo?.rules ?? []),
         };
         // for simulations: `playing` (`not playing` is default, omitted)
         item.isPlaying && smallFlags.push("playing");
@@ -171,13 +167,13 @@ function jsonToDestAST(state: CalcState.State) {
         item.fps !== undefined &&
           optionGroups.push({
             key: "fps",
-            value: parseLatex(item.fps),
+            value: transformLatex(item.fps),
           });
         break;
       case "expression":
         affixGroup = {
           key: "expr",
-          expr: parseLatex(item.latex ?? ""),
+          expr: transformLatex(item.latex ?? ""),
         };
         optionGroups.push(...getExpressionOptionGroups(item));
         break;
@@ -208,19 +204,19 @@ function jsonToDestAST(state: CalcState.State) {
             key: "image",
             opts: {
               ...(item.width !== undefined && {
-                width: parseLatex(item.width),
+                width: transformLatex(item.width),
               }),
               ...(item.height !== undefined && {
-                height: parseLatex(item.height),
+                height: transformLatex(item.height),
               }),
               ...(item.center !== undefined && {
-                center: parseLatex(item.center),
+                center: transformLatex(item.center),
               }),
               ...(item.angle !== undefined && {
-                angle: parseLatex(item.angle),
+                angle: transformLatex(item.angle),
               }),
               ...(item.opacity !== undefined && {
-                opacity: parseLatex(item.opacity),
+                opacity: transformLatex(item.opacity),
               }),
             },
           });
@@ -256,11 +252,11 @@ function jsonToDestAST(state: CalcState.State) {
   };
 }
 
-function decodeClickableRules(rules: CalcState.ClickableInfoRules) {
+function translateClickableRules(rules: CalcState.ClickableInfoRules) {
   return rules.map((rule) => ({
     id: rule.id,
-    expression: parseLatex(rule.expression),
-    assignment: parseLatex(rule.assignment),
+    expression: transformLatex(rule.expression),
+    assignment: transformLatex(rule.assignment),
   }));
 }
 
@@ -280,7 +276,7 @@ function getExpressionOptionGroups(item: CalcState.ExpressionState) {
   if (item.clickableInfo?.rules !== undefined) {
     optionGroups.push({
       key: "clickable rules",
-      value: decodeClickableRules(item.clickableInfo.rules),
+      value: translateClickableRules(item.clickableInfo.rules),
       flags: item.clickableInfo?.enabled ? [] : ["disabled"],
     });
   }
@@ -296,12 +292,12 @@ function getExpressionOptionGroups(item: CalcState.ExpressionState) {
       key: "regression",
       parameters: Object.entries(item.regressionParameters ?? {}).map(
         ([key, value]) => ({
-          parameter: parseLatex(key),
+          parameter: transformLatex(key),
           value: value,
         })
       ),
       opts: item.residualVariable
-        ? { residualVariable: parseLatex(item.residualVariable) }
+        ? { residualVariable: transformLatex(item.residualVariable) }
         : {},
       flags: item.isLogModeRegression ? ["log mode"] : [],
     });
@@ -330,8 +326,8 @@ function getExpressionOptionGroups(item: CalcState.ExpressionState) {
       );
     slider.playDirection === -1 && sliderFlags.push("left");
     let sliderValue = {
-      ...(slider.min !== undefined ? { min: parseLatex(slider.min) } : {}),
-      ...(slider.max !== undefined ? { max: parseLatex(slider.max) } : {}),
+      ...(slider.min !== undefined ? { min: transformLatex(slider.min) } : {}),
+      ...(slider.max !== undefined ? { max: transformLatex(slider.max) } : {}),
     };
     optionGroups.push({
       key: "slider",
@@ -351,8 +347,8 @@ function getExpressionOptionGroups(item: CalcState.ExpressionState) {
     optionGroups.push({
       key: "polar domain",
       value: {
-        min: parseLatex(item.polarDomain.min),
-        max: parseLatex(item.polarDomain.max),
+        min: transformLatex(item.polarDomain.min),
+        max: transformLatex(item.polarDomain.max),
       },
     });
   }
@@ -362,8 +358,8 @@ function getExpressionOptionGroups(item: CalcState.ExpressionState) {
     optionGroups.push({
       key: "domain",
       value: {
-        min: parseLatex(item.domain.min),
-        max: parseLatex(item.domain.max),
+        min: transformLatex(item.domain.min),
+        max: transformLatex(item.domain.max),
       },
     });
   }
@@ -372,10 +368,10 @@ function getExpressionOptionGroups(item: CalcState.ExpressionState) {
   if (item.cdf !== undefined) {
     let cdfInterval: DestAST.Interval = {};
     if (item.cdf.min !== undefined) {
-      cdfInterval.min = parseLatex(item.cdf.min);
+      cdfInterval.min = transformLatex(item.cdf.min);
     }
     if (item.cdf.max !== undefined) {
-      cdfInterval.max = parseLatex(item.cdf.max);
+      cdfInterval.max = transformLatex(item.cdf.max);
     }
     optionGroups.push({
       key: "cdf",
@@ -412,9 +408,11 @@ function getExpressionOptionGroups(item: CalcState.ExpressionState) {
       key: "label",
       ...("label" in item && { value: item.label }),
       opts: {
-        ...("labelSize" in item && { size: parseLatex(item.labelSize ?? "") }),
+        ...("labelSize" in item && {
+          size: transformLatex(item.labelSize ?? ""),
+        }),
         ...("labelAngle" in item && {
-          angle: parseLatex(item.labelAngle ?? ""),
+          angle: transformLatex(item.labelAngle ?? ""),
         }),
       },
       flags: labelFlags,
@@ -466,10 +464,10 @@ function getExpressionOptionGroups(item: CalcState.ExpressionState) {
     optionGroups.push({
       key: "boxplot",
       ...(vizProps?.breadth !== undefined && {
-        breadth: parseLatex(vizProps.breadth),
+        breadth: transformLatex(vizProps.breadth),
       }),
       ...(vizProps?.axisOffset !== undefined && {
-        offset: parseLatex(vizProps.axisOffset),
+        offset: transformLatex(vizProps.axisOffset),
       }),
       flags: boxplotFlags,
     });
@@ -499,9 +497,11 @@ function getCommonOptionGroups(
       flags: pointFlags,
       opts: {
         ...("pointOpacity" in item && {
-          opacity: parseLatex(item.pointOpacity ?? ""),
+          opacity: transformLatex(item.pointOpacity ?? ""),
         }),
-        ...("pointSize" in item && { size: parseLatex(item.pointSize ?? "") }),
+        ...("pointSize" in item && {
+          size: transformLatex(item.pointSize ?? ""),
+        }),
       },
     });
   }
@@ -522,9 +522,11 @@ function getCommonOptionGroups(
       flags: lineFlags,
       opts: {
         ...("lineOpacity" in item && {
-          opacity: parseLatex(item.lineOpacity ?? ""),
+          opacity: transformLatex(item.lineOpacity ?? ""),
         }),
-        ...("lineWidth" in item && { size: parseLatex(item.lineWidth ?? "") }),
+        ...("lineWidth" in item && {
+          size: transformLatex(item.lineWidth ?? ""),
+        }),
       },
     });
   }
@@ -536,7 +538,7 @@ function getCommonOptionGroups(
       flags: "fill" in item ? [item.fill ? "show" : "hide"] : [],
       opts:
         "fillOpacity" in item
-          ? { opacity: parseLatex(item.fillOpacity ?? "") }
+          ? { opacity: transformLatex(item.fillOpacity ?? "") }
           : {},
     });
   }
@@ -546,7 +548,9 @@ function getCommonOptionGroups(
     key: "color",
     ...("color" in item && { value: item.color }),
     opts:
-      "colorLatex" in item ? { var: parseLatex(item.colorLatex ?? "") } : {},
+      "colorLatex" in item
+        ? { var: transformLatex(item.colorLatex ?? "") }
+        : {},
   });
   // `drag: x`, `drag: y`, `drag: xy`: drag mode (`none` is default, omitted)
   if (
@@ -564,270 +568,18 @@ function getCommonOptionGroups(
 }
 
 function transformTableColumn(item: CalcState.TableColumn) {
-  // together
-  const out = {
-    values: item.values.map(parseLatex),
-    ...(item.latex !== undefined ? { header: parseLatex(item.latex) } : {}),
+  return {
+    values: item.values.map(transformLatex),
+    ...(item.latex !== undefined ? { header: transformLatex(item.latex) } : {}),
     smallFlags: item.hidden ? ["hidden" as const] : [],
     optionGroups: getCommonOptionGroups(item),
   };
-  return out;
 }
 
-function destASTToDest(destAST: DestAST.Program) {
-  return destAST.lines.map(lineToDestString).join("\n");
-}
-
-function xypToString<T>(
-  line: { x?: T; y?: T; polar?: T },
-  fn: (u: T) => string = (x) => `${x}`
-) {
-  let parts = [];
-  if (line.x !== undefined) {
-    parts.push("x " + fn(line.x));
-  }
-  if (line.y !== undefined) {
-    parts.push("y " + fn(line.y));
-  }
-  if (line.polar !== undefined) {
-    parts.push("polar " + fn(line.polar));
-  }
-  if (parts.length === 0) {
-    throw "Programming Error: expected x, y, or polar to be defined";
-  }
-  return parts.join(", ");
-}
-
-function lineToDestString(line: DestAST.Line) {
-  switch (line.type) {
-    case "setting-seed":
-      return `seed: ${encodeString(line.seed)}`;
-    case "setting-flags":
-      return `flags: ${line.flags.join(", ")}`;
-    case "setting-viewport":
-      return (
-        "viewport: " +
-        xypToString(line, (interval) => `[${interval.start}:${interval.end}]`)
-      );
-    case "setting-minor-subdivisions":
-      return "minor-subdivisions: " + xypToString(line);
-    case "setting-axis-steps":
-      return "axis steps: " + xypToString(line);
-    case "setting-axis-arrows":
-      return (
-        "axis arrows: " +
-        xypToString(
-          line,
-          (u) =>
-            ({
-              none: "-",
-              positive: "->",
-              both: "<->",
-            }[u])
-        )
-      );
-    case "setting-axis-labels":
-      return "axis labels: " + xypToString(line, encodeString);
-    case "setting-axes":
-      return "axes: " + xypToString(line);
-    case "setting-axis-numbers":
-      return "axis numbers: " + xypToString(line);
-    case "item-line":
-      return translateItemLine(line, "");
-  }
-}
-
-function translateItemLine(
-  line: DestAST.ItemLine,
-  indentation: string
-): string {
-  const smallFlagsString = line.smallFlags.map((c) => c + " ").join();
-  const affixGroupString = translateAffixGroup(line.affixGroup, indentation);
-  const affixString = `${smallFlagsString}${affixGroupString}`;
-  const optionsString = line.optionGroups
-    .map((line) => encodeOptionGroup(line, indentation) + "; ")
-    .join();
-  switch (line.affixGroup.key) {
-    case "folder":
-    case "table":
-    case "simulation":
-      return `${indentation}${optionsString}${
-        optionsString !== "" ? " " : ""
-      }${affixString}`;
-    case "expr":
-    case "image":
-    case "note":
-      return `${indentation}${affixString}${
-        affixString !== "" ? " " : ""
-      }${optionsString}`;
-  }
-}
-
-function translateAffixGroup(
-  affixGroup: DestAST.AffixGroup,
-  indentation: string
-) {
-  switch (affixGroup.key) {
-    case "folder":
-      let childrenString =
-        "\n" +
-        affixGroup.children
-          .map((line) => translateItemLine(line, indentation + INDENT))
-          .join("\n") +
-        "\n";
-      if (affixGroup.children.length === 0) {
-        childrenString = " ";
-      }
-      const titleString = affixGroup.title
-        ? encodeString(affixGroup.title) + " "
-        : "";
-      return `folder ${titleString}{${childrenString}}`;
-    case "table":
-      const tableString =
-        "{\n" +
-        affixGroup.columns
-          .map((col) => encodeColumnLine(col, indentation + INDENT))
-          .join("\n") +
-        `\n${indentation}}`;
-      if (affixGroup.columns.length === 0) {
-        return "table { }";
-      } else {
-        return `table ${tableString}`;
-      }
-    case "simulation":
-      return `simulation ${encodeClickableRules(
-        affixGroup.rules,
-        indentation
-      )}`;
-    case "expr":
-      return affixGroup.expr !== undefined ? encodeLatex(affixGroup.expr) : "";
-    case "image":
-      return `image ${encodeString(affixGroup.imageURL)}`;
-    case "note":
-      return affixGroup.text !== undefined
-        ? `note ${encodeString(affixGroup.text)}`
-        : "note";
-  }
-}
-
-function encodeColumnLine(column: DestAST.ColumnLine, indentation: string) {
-  const smallFlagsString = column.smallFlags.map((c) => c + " ").join();
-  const optionGroupsString = column.optionGroups
-    .map((group) => "; " + encodeOptionGroup(group, indentation))
-    .join();
-  const columnValuesString = encodeLatexList(column.values);
-  return (
-    indentation + smallFlagsString + columnValuesString + optionGroupsString
-  );
-}
-
-function encodeClickableRules(
-  rules: DestAST.ClickableRule[],
-  indentation: string
-) {
-  let rulesString =
-    "\n" +
-    rules
-      .map((rule) => encodeClickableRule(rule, indentation + INDENT))
-      .join("\n") +
-    "\n";
-  if (rules.length === 0) {
-    rulesString = " ";
-  }
-  return `{${rulesString}}`;
-}
-
-function encodeClickableRule(rule: DestAST.ClickableRule, indentation: string) {
-  const exprString = encodeLatex(rule.expression);
-  let out = `${indentation}${encodeLatex(rule.assignment)} <- ${exprString}`;
-  if (rule.id !== undefined) {
-    out += `; id: ${encodeString(rule.id)}`;
-  }
-  return out;
-}
-
-function encodeOptionGroup(group: DestAST.OptionGroup, indentation: string) {
-  const special = encodeSpecialOptionGroup(group, indentation);
-  const trailing = encodeTrailingOpts(group);
-  const join = special.trim() !== "" && trailing ? ", " : "";
-  return `${group.key}: ${special}${join}${trailing}`;
-}
-
-function encodeSpecialOptionGroup(
-  optionGroup: DestAST.OptionGroup,
-  indentation: string
-) {
-  switch (optionGroup.key) {
-    case "id":
-      return `${encodeString(optionGroup.value)}`;
-    case "polar domain":
-    case "domain":
-    case "slider":
-    case "cdf":
-      return optionGroup.value !== undefined
-        ? encodeInterval(optionGroup.value)
-        : "";
-    case "fps":
-      return encodeLatex(optionGroup.value) ?? "";
-    case "color":
-    case "label":
-    case "name":
-    case "clickable label":
-      return optionGroup.value !== undefined
-        ? encodeString(optionGroup.value) + " "
-        : "";
-    case "regression":
-      return optionGroup.parameters !== undefined
-        ? `{${encodeRegressionParameters(optionGroup.parameters)}}`
-        : "";
-
-    case "clickable rules":
-      return encodeClickableRules(optionGroup.value, indentation);
-    default:
-      return "";
-  }
-}
-
-function encodeTrailingOpts(optionGroup: DestAST.OptionGroup) {
-  return [
-    ...("flags" in optionGroup ? optionGroup.flags : []),
-    ...("opts" in optionGroup
-      ? Object.entries(optionGroup.opts).map(
-          ([key, value]) => `${key}=${encodeLatex(value)}`
-        )
-      : []),
-  ].join(", ");
-}
-
-function encodeRegressionParameters(parameters: DestAST.RegressionParameter[]) {
-  return parameters.length > 0
-    ? parameters
-        .map(({ parameter, value }) => `${encodeLatex(parameter)}=${value}`)
-        .join(", ")
-    : " ";
-}
-
-function encodeString(s: string) {
-  return `"${s.replace('"', '""')}"`;
-}
-
-function encodeLatexList(list: DestAST.Latex[]) {
-  return `[${list.map(encodeLatex).join(", ")}]`;
-}
-
-function encodeInterval(interval: DestAST.Interval) {
-  const stepString = interval.step !== undefined ? ":" + interval.step : "";
-  return `[${interval.min ?? ""}:${interval.max ?? ""}${stepString}]`;
-}
-
-function parseLatex(latex: string): DestAST.Latex {
-  // TODO: actually parse
+function transformLatex(latex: string): DestAST.Latex {
+  // TODO: actually parse the latex
   return {
     type: "raw-latex",
     value: latex,
   };
-}
-
-function encodeLatex(latex: DestAST.Latex) {
-  return "`" + latex.value.replace(/`/g, "``") + "`";
 }
