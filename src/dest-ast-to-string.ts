@@ -70,20 +70,20 @@ function encodeItemLine(line: DestAST.ItemLine, indentation: string): string {
   const affixGroupString = encodeAffixGroup(line.affixGroup, indentation);
   const affixString = `${smallFlagsString}${affixGroupString}`;
   const optionsString = line.optionGroups
-    .map((line) => encodeOptionGroup(line, indentation) + "; ")
-    .join();
+    .map((line) => encodeOptionGroup(line, indentation))
+    .join("; ");
   switch (line.affixGroup.key) {
     case "folder":
     case "table":
     case "simulation":
       return `${indentation}${optionsString}${
-        optionsString !== "" ? " " : ""
+        optionsString !== "" ? "; " : ""
       }${affixString}`;
     case "expr":
     case "image":
     case "note":
       return `${indentation}${affixString}${
-        affixString !== "" ? " " : ""
+        affixString !== "" ? "; " : ""
       }${optionsString}`;
   }
 }
@@ -171,7 +171,7 @@ function encodeClickableRule(rule: DestAST.ClickableRule, indentation: string) {
 function encodeOptionGroup(group: DestAST.OptionGroup, indentation: string) {
   const special = encodeSpecialOptionGroup(group, indentation);
   const trailing = encodeTrailingOpts(group);
-  const join = special.trim() !== "" && trailing ? ", " : "";
+  const join = special.trim() !== "" && trailing !== "" ? ", " : "";
   return `${group.key}: ${special}${join}${trailing}`;
 }
 
@@ -213,12 +213,56 @@ function encodeSpecialOptionGroup(
 function encodeTrailingOpts(optionGroup: DestAST.OptionGroup) {
   return [
     ...("flags" in optionGroup ? optionGroup.flags : []),
-    ...("opts" in optionGroup
-      ? Object.entries(optionGroup.opts).map(
-          ([key, value]) => `${key}=${encodeLatex(value)}`
-        )
-      : []),
+    ...encodeKVOpts(optionGroup),
   ].join(", ");
+}
+
+function encodeKVOpts(group: DestAST.OptionGroup) {
+  if ("opts" in group) {
+    switch (group.key) {
+      case "color":
+        return maybeOptLatex(group, "var");
+      case "label":
+        const size = group.opts.size;
+        return (
+          size === "small" || size === "medium"
+            ? [`size=${size}`]
+            : maybeOptLatex({ opts: { size } }, "size")
+        ).concat(maybeOptLatex({ opts: { angle: group.opts.angle } }, "angle"));
+      case "slider":
+        return group.opts.period !== undefined
+          ? [`period=${group.opts.period}`]
+          : [];
+      case "regression":
+        return maybeOptLatex(group, "residuals");
+      case "points":
+        return maybeOptLatex(group, "opacity").concat(
+          maybeOptLatex(group, "size")
+        );
+      case "lines":
+        return maybeOptLatex(group, "opacity").concat(
+          maybeOptLatex(group, "width")
+        );
+      case "fill":
+        return maybeOptLatex(group, "opacity");
+      case "image":
+        return maybeOptLatex(group, "width")
+          .concat(maybeOptLatex(group, "height"))
+          .concat(maybeOptLatex(group, "center"))
+          .concat(maybeOptLatex(group, "angle"))
+          .concat(maybeOptLatex(group, "opacity"));
+    }
+  } else {
+    return [];
+  }
+}
+
+function maybeOptLatex<T extends { [key: string]: DestAST.Latex | undefined }>(
+  group: { opts: T },
+  key: keyof T & string
+) {
+  const ok = group.opts[key];
+  return ok !== undefined ? [`${key}=${encodeLatex(ok)}`] : [];
 }
 
 function encodeRegressionParameters(parameters: DestAST.RegressionParameter[]) {
@@ -239,7 +283,9 @@ function encodeLatexList(list: DestAST.Latex[]) {
 
 function encodeInterval(interval: DestAST.Interval) {
   const stepString = interval.step !== undefined ? ":" + interval.step : "";
-  return `[${interval.min ?? ""}:${interval.max ?? ""}${stepString}]`;
+  return `[${interval.min ? encodeLatex(interval.min) : ""}:${
+    interval.max ? encodeLatex(interval.max) : ""
+  }${stepString}]`;
 }
 function encodeLatex(latex: DestAST.Latex) {
   return "`" + latex.value.replace(/`/g, "``") + "`";

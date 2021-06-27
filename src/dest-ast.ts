@@ -182,7 +182,7 @@ export type OptionGroup =
       key: "regression";
       parameters: RegressionParameter[];
       opts: {
-        residualVariable?: Latex;
+        residuals?: Latex;
       };
       flags: Array<"log mode">;
     }

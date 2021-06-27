@@ -234,7 +234,7 @@ function translateJSON(state: CalcState.State): DestAST.Program {
       type: "item-line",
       smallFlags,
       affixGroup,
-      optionGroups: [],
+      optionGroups,
     };
     if (item.type === "folder" || item.folderId !== currentFolderID) {
       if (item.id !== currentFolderID) {
@@ -297,7 +297,7 @@ function getExpressionOptionGroups(item: CalcState.ExpressionState) {
         })
       ),
       opts: item.residualVariable
-        ? { residualVariable: transformLatex(item.residualVariable) }
+        ? { residuals: transformLatex(item.residualVariable) }
         : {},
       flags: item.isLogModeRegression ? ["log mode"] : [],
     });
@@ -544,14 +544,16 @@ function getCommonOptionGroups(
   }
   // `color`: color, such as `color: #000000`
   // `color: var = c_x`;
-  optionGroups.push({
-    key: "color",
-    ...("color" in item && { value: item.color }),
-    opts:
-      "colorLatex" in item
-        ? { var: transformLatex(item.colorLatex ?? "") }
-        : {},
-  });
+  if ("color" in item || "colorLatex" in item) {
+    optionGroups.push({
+      key: "color",
+      ...("color" in item && { value: item.color }),
+      opts:
+        "colorLatex" in item
+          ? { var: transformLatex(item.colorLatex ?? "") }
+          : {},
+    });
+  }
   // `drag: x`, `drag: y`, `drag: xy`: drag mode (`none` is default, omitted)
   if (
     "dragMode" in item &&
