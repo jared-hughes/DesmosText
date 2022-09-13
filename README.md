@@ -1,5 +1,7 @@
 # DesmosText
 
+## ⚠ This repository is archived. See instead [DesModder's text mode](https://github.com/DesModder/DesModder)
+
 DesmosText serves as a Domain-Specific Language (DSL) with a nearly one-to-one mapping between Desmos graphs in JSON and human-readable text files. DesmosText uses the `.dest` file extension.
 
 WARNING: DesmosText is not yet stable. Do not use it with the expectation that `.dest` files will continue to work in the future.
